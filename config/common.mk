@@ -1,6 +1,4 @@
-PRODUCT_BRAND ?= emotion
-
-SUPERUSER_EMBEDDED := true
+PRODUCT_BRAND ?= cyanogenmod
 
 ifneq ($(TARGET_SCREEN_WIDTH) $(TARGET_SCREEN_HEIGHT),$(space))
 # determine the smaller dimension
@@ -12,7 +10,7 @@ TARGET_BOOTANIMATION_SIZE := $(shell \
   fi )
 
 # get a sorted list of the sizes
-bootanimation_sizes := $(subst .zip,, $(shell ls vendor/emotion/prebuilt/bootanimation))
+bootanimation_sizes := $(subst .zip,, $(shell ls vendor/cm/prebuilt/common/bootanimation))
 bootanimation_sizes := $(shell echo -e $(subst $(space),'\n',$(bootanimation_sizes)) | sort -rn)
 
 # find the appropriate size and set
@@ -29,14 +27,20 @@ endef
 $(foreach size,$(bootanimation_sizes), $(call check_and_set_bootanimation,$(size)))
 
 ifeq ($(TARGET_BOOTANIMATION_HALF_RES),true)
-PRODUCT_BOOTANIMATION := vendor/emotion/prebuilt/bootanimation/halfres/$(TARGET_BOOTANIMATION_NAME).zip
+PRODUCT_BOOTANIMATION := vendor/cm/prebuilt/common/bootanimation/halfres/$(TARGET_BOOTANIMATION_NAME).zip
 else
-PRODUCT_BOOTANIMATION := vendor/emotion/prebuilt/bootanimation/$(TARGET_BOOTANIMATION_NAME).zip
+PRODUCT_BOOTANIMATION := vendor/cm/prebuilt/common/bootanimation/$(TARGET_BOOTANIMATION_NAME).zip
 endif
 endif
 
-# Common dictionaries
-PRODUCT_PACKAGE_OVERLAYS += vendor/emotion/overlay/dictionaries
+ifdef CM_NIGHTLY
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.rommanager.developerid=cyanogenmodnightly
+else
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.rommanager.developerid=cyanogenmod
+endif
+
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
 
 ifeq ($(PRODUCT_GMS_CLIENTID_BASE),)
@@ -56,7 +60,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.com.android.dateformat=MM-dd-yyyy \
     ro.com.android.dataroaming=false
 
-#SELinux
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.build.selinux=1
 
@@ -70,51 +73,43 @@ ifneq ($(TARGET_BUILD_VARIANT),eng)
 ADDITIONAL_DEFAULT_PROPERTIES += ro.adb.secure=1
 endif
 
+# Copy over the changelog to the device
+PRODUCT_COPY_FILES += \
+    vendor/cm/CHANGELOG.mkdn:system/etc/CHANGELOG-CM.txt
+
 # Backup Tool
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/bin/backuptool.sh:install/bin/backuptool.sh \
-    vendor/emotion/prebuilt/common/bin/backuptool.functions:install/bin/backuptool.functions \
-    vendor/emotion/prebuilt/common/bin/50-emotion.sh:system/addon.d/50-emotion.sh \
-    vendor/emotion/prebuilt/common/bin/blacklist:system/addon.d/blacklist \
-    vendor/emotion/prebuilt/common/bin/99-backup.sh:system/addon.d/99-backup.sh \
-    vendor/emotion/prebuilt/common/etc/backup.conf:system/etc/backup.conf
+    vendor/cm/prebuilt/common/bin/backuptool.sh:install/bin/backuptool.sh \
+    vendor/cm/prebuilt/common/bin/backuptool.functions:install/bin/backuptool.functions \
+    vendor/cm/prebuilt/common/bin/50-cm.sh:system/addon.d/50-cm.sh \
+    vendor/cm/prebuilt/common/bin/blacklist:system/addon.d/blacklist
+
 # Backup Services whitelist
 PRODUCT_COPY_FILES += \
-    vendor/emotion/configs/permissions/backup.xml:system/etc/sysconfig/backup.xml
+    vendor/cm/config/permissions/backup.xml:system/etc/sysconfig/backup.xml
 
 # Signature compatibility validation
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/bin/otasigcheck.sh:install/bin/otasigcheck.sh
+    vendor/cm/prebuilt/common/bin/otasigcheck.sh:install/bin/otasigcheck.sh
 
 # init.d support
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/etc/init.d/00start:system/etc/init.d/00start \
-    vendor/emotion/prebuilt/common/etc/init.d/01sysctl:system/etc/init.d/01sysctl \
-    vendor/emotion/prebuilt/common/etc/sysctl.conf:system/etc/sysctl.conf \
-    vendor/emotion/prebuilt/common/bin/sysinit:system/bin/sysinit
+    vendor/cm/prebuilt/common/etc/init.d/00banner:system/etc/init.d/00banner \
+    vendor/cm/prebuilt/common/bin/sysinit:system/bin/sysinit
 
-# userinit support
 ifneq ($(TARGET_BUILD_VARIANT),user)
+# userinit support
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/etc/init.d/90userinit:system/etc/init.d/90userinit
+    vendor/cm/prebuilt/common/etc/init.d/90userinit:system/etc/init.d/90userinit
 endif
 
-# EMOTION-specific init file
+# CM-specific init file
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/etc/init.local.rc:root/init.emotion.rc \
-
-# Installer
-PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/bin/persist.sh:install/bin/persist.sh \
-    vendor/emotion/prebuilt/common/etc/persist.conf:system/etc/persist.conf
-
-PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/lib/libmicrobes_jni.so:system/lib/libmicrobes_jni.so \
-    vendor/emotion/prebuilt/common/etc/resolv.conf:system/etc/resolv.conf
+    vendor/cm/prebuilt/common/etc/init.local.rc:root/init.cm.rc
 
 # Copy over added mimetype supported in libcore.net.MimeUtils
 PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/lib/content-types.properties:system/lib/content-types.properties
+    vendor/cm/prebuilt/common/lib/content-types.properties:system/lib/content-types.properties
 
 # Enable SIP+VoIP on all targets
 PRODUCT_COPY_FILES += \
@@ -124,35 +119,28 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     frameworks/base/data/keyboards/Vendor_045e_Product_028e.kl:system/usr/keylayout/Vendor_045e_Product_0719.kl
 
+# This is CM!
 PRODUCT_COPY_FILES += \
-    vendor/emotion/configs/permissions/com.emotion.android.xml:system/etc/permissions/com.emotion.android.xml
+    vendor/cm/config/permissions/com.cyanogenmod.android.xml:system/etc/permissions/com.cyanogenmod.android.xml
 
 # Theme engine
-include vendor/emotion/configs/themes_common.mk
+include vendor/cm/config/themes_common.mk
 
 ifneq ($(TARGET_DISABLE_CMSDK), true)
 # CMSDK
-include vendor/emotion/configs/cmsdk_common.mk
+include vendor/cm/config/cmsdk_common.mk
 endif
 
-# Required EMOTION packages
+# Required CM packages
 PRODUCT_PACKAGES += \
     BluetoothExt \
     CMAudioService \
     CMParts \
     Development \
-    KernelAdiutor \
-    Savoca-kcal \
-    AdAway \
+    Profiles \
     WeatherManagerService
 
-#Build EmotionOTA only if EMOTION_VERSION_MAINTENANCE isn't Unofficial
-ifneq ($(EMOTION_VERSION_MAINTENANCE),Unofficial)
-PRODUCT_PACKAGES += \
-    EmotionOTA
-endif
-
-# Optional EMOTION packages
+# Optional CM packages
 PRODUCT_PACKAGES += \
     libemoji \
     Terminal
@@ -163,15 +151,17 @@ PRODUCT_PACKAGES += \
 
 # Custom CM packages
 PRODUCT_PACKAGES += \
+    Launcher3 \
+    Trebuchet \
     AudioFX \
     CMWallpapers \
     CMFileManager \
-    CMSettingsProvider \
     Eleven \
-    ExactCalculator \
-    Launcher3 \
     LockClock \
-    Trebuchet \
+    CMUpdater \
+    CyanogenSetupWizard \
+    CMSettingsProvider \
+    ExactCalculator \
     LiveLockScreenService \
     WeatherProvider
 
@@ -248,30 +238,128 @@ PRODUCT_PACKAGES += \
 endif
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    persist.sys.root_access=3
+    persist.sys.root_access=0
 
-# Common overlay
-DEVICE_PACKAGE_OVERLAYS += vendor/emotion/overlay/common
+DEVICE_PACKAGE_OVERLAYS += vendor/cm/overlay/common
 
 PRODUCT_VERSION_MAJOR = 14
 PRODUCT_VERSION_MINOR = 0
-PRODUCT_VERSION_MAINTENANCE = 0
+PRODUCT_VERSION_MAINTENANCE := 0
 
-# Version information used on all builds
-PRODUCT_BUILD_PROP_OVERRIDES += BUILD_VERSION_TAGS=release-keys USER=android-build BUILD_UTC_DATE=$(shell date +"%s")
+ifeq ($(TARGET_VENDOR_SHOW_MAINTENANCE_VERSION),true)
+    CM_VERSION_MAINTENANCE := $(PRODUCT_VERSION_MAINTENANCE)
+else
+    CM_VERSION_MAINTENANCE := 0
+endif
 
-# Call EMOTION Stuff
-$(call inherit-product, vendor/emotion/configs/emotion_common.mk)
+# Set CM_BUILDTYPE from the env RELEASE_TYPE, for jenkins compat
+
+ifndef CM_BUILDTYPE
+    ifdef RELEASE_TYPE
+        # Starting with "CM_" is optional
+        RELEASE_TYPE := $(shell echo $(RELEASE_TYPE) | sed -e 's|^CM_||g')
+        CM_BUILDTYPE := $(RELEASE_TYPE)
+    endif
+endif
+
+# Filter out random types, so it'll reset to UNOFFICIAL
+ifeq ($(filter RELEASE NIGHTLY SNAPSHOT EXPERIMENTAL,$(CM_BUILDTYPE)),)
+    CM_BUILDTYPE :=
+endif
+
+ifdef CM_BUILDTYPE
+    ifneq ($(CM_BUILDTYPE), SNAPSHOT)
+        ifdef CM_EXTRAVERSION
+            # Force build type to EXPERIMENTAL
+            CM_BUILDTYPE := EXPERIMENTAL
+            # Remove leading dash from CM_EXTRAVERSION
+            CM_EXTRAVERSION := $(shell echo $(CM_EXTRAVERSION) | sed 's/-//')
+            # Add leading dash to CM_EXTRAVERSION
+            CM_EXTRAVERSION := -$(CM_EXTRAVERSION)
+        endif
+    else
+        ifndef CM_EXTRAVERSION
+            # Force build type to EXPERIMENTAL, SNAPSHOT mandates a tag
+            CM_BUILDTYPE := EXPERIMENTAL
+        else
+            # Remove leading dash from CM_EXTRAVERSION
+            CM_EXTRAVERSION := $(shell echo $(CM_EXTRAVERSION) | sed 's/-//')
+            # Add leading dash to CM_EXTRAVERSION
+            CM_EXTRAVERSION := -$(CM_EXTRAVERSION)
+        endif
+    endif
+else
+    # If CM_BUILDTYPE is not defined, set to UNOFFICIAL
+    CM_BUILDTYPE := UNOFFICIAL
+    CM_EXTRAVERSION :=
+endif
+
+ifeq ($(CM_BUILDTYPE), UNOFFICIAL)
+    ifneq ($(TARGET_UNOFFICIAL_BUILD_ID),)
+        CM_EXTRAVERSION := -$(TARGET_UNOFFICIAL_BUILD_ID)
+    endif
+endif
+
+ifeq ($(CM_BUILDTYPE), RELEASE)
+    ifndef TARGET_VENDOR_RELEASE_BUILD_ID
+        CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(PRODUCT_VERSION_MAINTENANCE)$(PRODUCT_VERSION_DEVICE_SPECIFIC)-$(CM_BUILD)
+    else
+        ifeq ($(TARGET_BUILD_VARIANT),user)
+            ifeq ($(CM_VERSION_MAINTENANCE),0)
+                CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(CM_BUILD)
+            else
+                CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(CM_VERSION_MAINTENANCE)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(CM_BUILD)
+            endif
+        else
+            CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(PRODUCT_VERSION_MAINTENANCE)$(PRODUCT_VERSION_DEVICE_SPECIFIC)-$(CM_BUILD)
+        endif
+    endif
+else
+    ifeq ($(CM_VERSION_MAINTENANCE),0)
+        CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(shell date -u +%Y%m%d)-$(CM_BUILDTYPE)$(CM_EXTRAVERSION)-$(CM_BUILD)
+    else
+        CM_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(CM_VERSION_MAINTENANCE)-$(shell date -u +%Y%m%d)-$(CM_BUILDTYPE)$(CM_EXTRAVERSION)-$(CM_BUILD)
+    endif
+endif
+
+PRODUCT_PROPERTY_OVERRIDES += \
+  ro.cm.version=$(CM_VERSION) \
+  ro.cm.releasetype=$(CM_BUILDTYPE) \
+  ro.modversion=$(CM_VERSION) \
+  ro.cmlegal.url=https://cyngn.com/legal/privacy-policy
+
+-include vendor/cm-priv/keys/keys.mk
+
+CM_DISPLAY_VERSION := $(CM_VERSION)
+
+ifneq ($(PRODUCT_DEFAULT_DEV_CERTIFICATE),)
+ifneq ($(PRODUCT_DEFAULT_DEV_CERTIFICATE),build/target/product/security/testkey)
+  ifneq ($(CM_BUILDTYPE), UNOFFICIAL)
+    ifndef TARGET_VENDOR_RELEASE_BUILD_ID
+      ifneq ($(CM_EXTRAVERSION),)
+        # Remove leading dash from CM_EXTRAVERSION
+        CM_EXTRAVERSION := $(shell echo $(CM_EXTRAVERSION) | sed 's/-//')
+        TARGET_VENDOR_RELEASE_BUILD_ID := $(CM_EXTRAVERSION)
+      else
+        TARGET_VENDOR_RELEASE_BUILD_ID := $(shell date -u +%Y%m%d)
+      endif
+    else
+      TARGET_VENDOR_RELEASE_BUILD_ID := $(TARGET_VENDOR_RELEASE_BUILD_ID)
+    endif
+    ifeq ($(CM_VERSION_MAINTENANCE),0)
+        CM_DISPLAY_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(CM_BUILD)
+    else
+        CM_DISPLAY_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(CM_VERSION_MAINTENANCE)-$(TARGET_VENDOR_RELEASE_BUILD_ID)-$(CM_BUILD)
+    endif
+endif
+endif
+endif
+
+PRODUCT_PROPERTY_OVERRIDES += \
+  ro.cm.display.version=$(CM_DISPLAY_VERSION)
 
 -include $(WORKSPACE)/build_env/image-auto-bits.mk
--include vendor/emotion/configs/partner_gms.mk
-
-# SuperSU
-PRODUCT_COPY_FILES += \
-    vendor/emotion/prebuilt/common/etc/supersu.zip:supersu/supersu.zip
-
--include $(WORKSPACE)/build_env/image-auto-bits.mk
-
+-include vendor/cm/config/partner_gms.mk
 -include vendor/cyngn/product.mk
 
 $(call prepend-product-if-exists, vendor/extra/product.mk)

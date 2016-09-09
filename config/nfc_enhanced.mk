@@ -1,3 +1,3 @@
-# This device supports EMOTION enhanced NFC
+# This device supports CM enhanced NFC
 PRODUCT_COPY_FILES += \
-    vendor/emotion/configs/permissions/com.emotion.nfc.enhanced.xml:system/etc/permissions/com.emotion.nfc.enhanced.xml
+    vendor/cm/config/permissions/com.cyanogenmod.nfc.enhanced.xml:system/etc/permissions/com.cyanogenmod.nfc.enhanced.xml
